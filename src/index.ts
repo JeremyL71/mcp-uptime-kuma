@@ -145,9 +145,12 @@ async function runHttp(config: UptimeKumaConfig) {
 
   // When running behind a reverse proxy (ingress, load balancer, sidecar proxy),
   // set TRUST_PROXY so express-rate-limit derives the real client IP from
-  // X-Forwarded-For. Without it, express-rate-limit v7 throws
-  // ERR_ERL_UNEXPECTED_X_FORWARDED_FOR and every client is rate-limited under the
-  // single proxy IP. Accepts a hop count ("1"), "true"/"false", or an IP/subnet list.
+  // X-Forwarded-For. Without it req.ip is the proxy's address, so every client
+  // shares a single rate-limit bucket and all of them start getting 429s.
+  // (express-rate-limit also logs ERR_ERL_UNEXPECTED_X_FORWARDED_FOR in that case —
+  // its validations wrapper catches the error and console.errors it, so it is a
+  // diagnostic signal rather than the failure itself.)
+  // Accepts a hop count ("1"), "true"/"false", or an IP/subnet list.
   // Defaults to Express's built-in behaviour (no trust) when unset — secure by default.
   const trustProxy = process.env.TRUST_PROXY;
   if (trustProxy !== undefined && trustProxy !== '') {
